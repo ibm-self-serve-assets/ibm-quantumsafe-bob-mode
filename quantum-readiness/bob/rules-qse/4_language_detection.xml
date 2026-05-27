@@ -1,0 +1,353 @@
+<language_detection_guide>
+  <overview>
+    Comprehensive rules and strategies for automatically detecting the primary
+    programming language of a project to determine appropriate QSE scan configuration.
+  </overview>
+
+  <supported_languages>
+    <language>
+      <name>Java</name>
+      <extension>.java</extension>
+      <qse_flag>-l .java</qse_flag>
+      <scan_types>
+        <scan>Cryptographic Analytics (with -da flag)</scan>
+        <scan>API Discovery (without -da flag)</scan>
+      </scan_types>
+      <special_requirements>
+        Requires class file path (-cf) for Cryptographic Analytics
+      </special_requirements>
+    </language>
+
+    <language>
+      <name>Go</name>
+      <extension>.go</extension>
+      <qse_flag>-l .go</qse_flag>
+      <scan_types>
+        <scan>API Discovery only</scan>
+      </scan_types>
+    </language>
+
+    <language>
+      <name>Dart</name>
+      <extension>.dart</extension>
+      <qse_flag>-l .dart</qse_flag>
+      <scan_types>
+        <scan>API Discovery only</scan>
+      </scan_types>
+    </language>
+
+    <language>
+      <name>Python</name>
+      <extension>.py</extension>
+      <qse_flag>-l .py</qse_flag>
+      <scan_types>
+        <scan>API Discovery only</scan>
+      </scan_types>
+    </language>
+
+    <language>
+      <name>C++</name>
+      <extension>.cpp</extension>
+      <qse_flag>-l .cpp</qse_flag>
+      <scan_types>
+        <scan>API Discovery only</scan>
+      </scan_types>
+      <note>Also covers .cc, .cxx, .c++ files</note>
+    </language>
+  </supported_languages>
+
+  <detection_strategy>
+    <step number="1">
+      <title>Use list_files Tool</title>
+      <description>
+        Get a recursive listing of all files in the project directory
+      </description>
+      <tool>list_files</tool>
+      <parameters>
+        <path>Project root directory</path>
+        <recursive>true</recursive>
+      </parameters>
+    </step>
+
+    <step number="2">
+      <title>Count File Extensions</title>
+      <description>
+        Analyze the file listing to count occurrences of each supported extension
+      </description>
+      <count_these_extensions>
+        <extension>.java</extension>
+        <extension>.go</extension>
+        <extension>.dart</extension>
+        <extension>.py</extension>
+        <extension>.cpp (also .cc, .cxx, .c++, .h, .hpp)</extension>
+      </count_these_extensions>
+      <exclude_patterns>
+        <pattern>node_modules/</pattern>
+        <pattern>vendor/</pattern>
+        <pattern>.git/</pattern>
+        <pattern>build/</pattern>
+        <pattern>dist/</pattern>
+        <pattern>target/</pattern>
+        <pattern>__pycache__/</pattern>
+        <pattern>.venv/</pattern>
+        <pattern>venv/</pattern>
+      </exclude_patterns>
+    </step>
+
+    <step number="3">
+      <title>Identify Primary Language</title>
+      <description>
+        Determine which language has the most source files
+      </description>
+      <rules>
+        <rule priority="1">
+          Language with highest count of source files is primary
+        </rule>
+        <rule priority="2">
+          If counts are close (within 20%), check for language-specific markers
+        </rule>
+        <rule priority="3">
+          If still ambiguous, ask user to specify language
+        </rule>
+      </rules>
+    </step>
+
+    <step number="4">
+      <title>Verify with Language Markers</title>
+      <description>
+        Confirm detection by checking for language-specific project files
+      </description>
+      <markers>
+        <language name="Java">
+          <marker>pom.xml (Maven)</marker>
+          <marker>build.gradle or build.gradle.kts (Gradle)</marker>
+          <marker>settings.gradle</marker>
+          <marker>.classpath (Eclipse)</marker>
+          <marker>.idea/ directory (IntelliJ)</marker>
+        </language>
+        <language name="Go">
+          <marker>go.mod</marker>
+          <marker>go.sum</marker>
+          <marker>Gopkg.toml</marker>
+        </language>
+        <language name="Dart">
+          <marker>pubspec.yaml</marker>
+          <marker>pubspec.lock</marker>
+          <marker>.dart_tool/</marker>
+        </language>
+        <language name="Python">
+          <marker>requirements.txt</marker>
+          <marker>setup.py</marker>
+          <marker>pyproject.toml</marker>
+          <marker>Pipfile</marker>
+          <marker>poetry.lock</marker>
+        </language>
+        <language name="C++">
+          <marker>CMakeLists.txt</marker>
+          <marker>Makefile</marker>
+          <marker>*.vcxproj (Visual Studio)</marker>
+          <marker>configure.ac</marker>
+        </language>
+      </markers>
+    </step>
+  </detection_strategy>
+
+  <detection_algorithms>
+    <algorithm name="simple_count">
+      <description>Basic detection based on file extension counts</description>
+      <pseudocode><![CDATA[
+1. Get recursive file listing
+2. Initialize counters for each extension
+3. For each file:
+   - If file is in excluded directory, skip
+   - If file has .java extension, increment java_count
+   - If file has .go extension, increment go_count
+   - If file has .dart extension, increment dart_count
+   - If file has .py extension, increment python_count
+   - If file has .cpp/.cc/.cxx extension, increment cpp_count
+4. Return language with highest count
+5. If no files found, return null (ask user)
+      ]]></pseudocode>
+    </algorithm>
+
+    <algorithm name="weighted_detection">
+      <description>Advanced detection considering file locations and markers</description>
+      <pseudocode><![CDATA[
+1. Perform simple_count algorithm
+2. Check for language-specific markers:
+   - If pom.xml or build.gradle exists, boost Java score
+   - If go.mod exists, boost Go score
+   - If pubspec.yaml exists, boost Dart score
+   - If requirements.txt or setup.py exists, boost Python score
+   - If CMakeLists.txt exists, boost C++ score
+3. Check source file locations:
+   - Files in src/main/java/ strongly indicate Java
+   - Files in cmd/ or pkg/ indicate Go
+   - Files in lib/ with .dart indicate Dart
+   - Files in src/ with .py indicate Python
+4. Return language with highest weighted score
+5. If ambiguous (scores within 20%), ask user
+      ]]></pseudocode>
+    </algorithm>
+  </detection_algorithms>
+
+  <special_cases>
+    <case name="polyglot_project">
+      <description>Project contains multiple languages</description>
+      <strategy>
+        <step>Identify the dominant language by file count</step>
+        <step>Check if user wants to scan specific language</step>
+        <step>If unclear, ask user which language to scan</step>
+      </strategy>
+      <example>
+        Project has both Java backend and Python scripts.
+        If Java files outnumber Python 3:1, default to Java.
+        Otherwise, ask user which to scan.
+      </example>
+    </case>
+
+    <case name="no_source_files">
+      <description>No supported language files found</description>
+      <strategy>
+        <step>Report that no supported language was detected</step>
+        <step>List supported languages: Java, Go, Dart, Python, C++</step>
+        <step>Ask user to specify language or provide correct path</step>
+      </strategy>
+    </case>
+
+    <case name="test_files_only">
+      <description>Only test files found, no main source files</description>
+      <strategy>
+        <step>Count test files to determine language</step>
+        <step>Warn user that only test files were found</step>
+        <step>Proceed with detected language</step>
+      </strategy>
+    </case>
+
+    <case name="ambiguous_cpp">
+      <description>C++ project with mixed extensions (.cpp, .cc, .cxx)</description>
+      <strategy>
+        <step>Count all C++ extensions together</step>
+        <step>Use .cpp as the standard extension for QSE</step>
+        <step>Note: QSE will scan all C++ variants</step>
+      </strategy>
+    </case>
+  </special_cases>
+
+  <directory_patterns>
+    <pattern language="Java">
+      <typical_structure>
+        src/main/java/ - Main source files
+        src/test/java/ - Test files
+        target/ - Build output (Maven)
+        build/ - Build output (Gradle)
+      </typical_structure>
+      <strong_indicators>
+        <indicator>src/main/java/com/</indicator>
+        <indicator>src/main/java/org/</indicator>
+      </strong_indicators>
+    </pattern>
+
+    <pattern language="Go">
+      <typical_structure>
+        cmd/ - Command line applications
+        pkg/ - Library packages
+        internal/ - Private packages
+        vendor/ - Dependencies
+      </typical_structure>
+      <strong_indicators>
+        <indicator>main.go in cmd/</indicator>
+        <indicator>go.mod in root</indicator>
+      </strong_indicators>
+    </pattern>
+
+    <pattern language="Dart">
+      <typical_structure>
+        lib/ - Library code
+        bin/ - Executables
+        test/ - Tests
+        web/ - Web files (Flutter)
+      </typical_structure>
+      <strong_indicators>
+        <indicator>pubspec.yaml in root</indicator>
+        <indicator>lib/main.dart</indicator>
+      </strong_indicators>
+    </pattern>
+
+    <pattern language="Python">
+      <typical_structure>
+        src/ or package_name/ - Source code
+        tests/ - Test files
+        venv/ or .venv/ - Virtual environment
+      </typical_structure>
+      <strong_indicators>
+        <indicator>setup.py or pyproject.toml in root</indicator>
+        <indicator>__init__.py files</indicator>
+      </strong_indicators>
+    </pattern>
+
+    <pattern language="C++">
+      <typical_structure>
+        src/ - Source files
+        include/ - Header files
+        build/ - Build output
+        lib/ - Libraries
+      </typical_structure>
+      <strong_indicators>
+        <indicator>CMakeLists.txt</indicator>
+        <indicator>.h and .cpp file pairs</indicator>
+      </strong_indicators>
+    </pattern>
+  </directory_patterns>
+
+  <fallback_strategy>
+    <when>Language detection is uncertain or fails</when>
+    <action>
+      Use ask_followup_question to request language specification from user
+    </action>
+    <question_template>
+      I couldn't automatically detect the programming language of this project.
+      Which language should I scan for quantum safety?
+    </question_template>
+    <suggestions>
+      <suggest>Java (.java) - Supports both Cryptographic Analytics and API Discovery</suggest>
+      <suggest>Go (.go) - API Discovery scan</suggest>
+      <suggest>Python (.py) - API Discovery scan</suggest>
+      <suggest>Dart (.dart) - API Discovery scan</suggest>
+      <suggest>C++ (.cpp) - API Discovery scan</suggest>
+    </suggestions>
+  </fallback_strategy>
+
+  <validation_rules>
+    <rule>
+      Always verify detected language makes sense for the project structure
+    </rule>
+    <rule>
+      If file count is very low (< 5 files), consider asking user for confirmation
+    </rule>
+    <rule>
+      If multiple languages have similar counts (within 20%), check for markers
+    </rule>
+    <rule>
+      Never assume language without evidence from file system
+    </rule>
+    <rule>
+      When in doubt, ask the user rather than guessing
+    </rule>
+  </validation_rules>
+
+  <output_format>
+    <detected_language>
+      <name>Language name (e.g., "Java")</name>
+      <extension>QSE extension flag (e.g., ".java")</extension>
+      <confidence>High/Medium/Low</confidence>
+      <evidence>
+        <file_count>Number of source files found</file_count>
+        <markers>List of language-specific markers found</markers>
+        <directory_structure>Relevant directory patterns observed</directory_structure>
+      </evidence>
+    </detected_language>
+  </output_format>
+</language_detection_guide>
+
+<!-- Made with Bob -->

@@ -1,0 +1,412 @@
+<qse_usage_examples>
+  <overview>
+    Complete workflow examples demonstrating how to use the Quantum Safe Explorer mode
+    for different languages and scenarios.
+  </overview>
+
+  <example name="java_quantum_readiness_full_scan">
+    <scenario>
+      User wants to perform a complete quantum readiness assessment on a Java project
+    </scenario>
+    <user_request>
+      "Scan this Java project for quantum safety"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language using list_files</action>
+        <tool>list_files</tool>
+        <result>Detects Java project (finds .java files, pom.xml)</result>
+      </step>
+      <step number="2">
+        <action>Locate class files directory</action>
+        <tool>list_files</tool>
+        <result>Finds target/classes directory (Maven project)</result>
+      </step>
+      <step number="3">
+        <action>Construct and execute Cryptographic Analytics command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/gsi/bob/qse/qse-mode -l .java -cf /Users/shetty/gsi/bob/qse/qse-mode/target/classes -da
+        </command>
+      </step>
+      <step number="4">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/gsi/bob/qse/qse-mode -l .java
+        </command>
+      </step>
+      <step number="5">
+        <action>Confirm completion</action>
+        <result>
+          Both Cryptographic Analytics and API Discovery scans completed successfully.
+          QSE reports are available in the output directory.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="go_api_discovery">
+    <scenario>
+      User wants to scan a Go project for quantum-vulnerable cryptographic APIs
+    </scenario>
+    <user_request>
+      "Check my Go code for quantum safety issues"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language using list_files</action>
+        <tool>list_files</tool>
+        <result>Detects Go project (finds .go files, go.mod)</result>
+      </step>
+      <step number="2">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/projects/go-app -l .go
+        </command>
+        <note>No -da flag (not applicable for Go)</note>
+        <note>No -cf flag (not applicable for Go)</note>
+      </step>
+      <step number="3">
+        <action>Confirm completion</action>
+        <result>
+          API Discovery scan completed successfully for Go project.
+          QSE report available showing cryptographic API usage.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="python_current_directory">
+    <scenario>
+      User wants to scan the current Python project directory
+    </scenario>
+    <user_request>
+      "Run quantum safe scan on this Python project"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language using list_files</action>
+        <tool>list_files</tool>
+        <result>Detects Python project (finds .py files, requirements.txt)</result>
+      </step>
+      <step number="2">
+        <action>Use current workspace directory</action>
+        <note>No specific path provided, use current workspace</note>
+      </step>
+      <step number="3">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/gsi/bob/qse/qse-mode -l .py
+        </command>
+      </step>
+      <step number="4">
+        <action>Confirm completion</action>
+        <result>
+          API Discovery scan completed for Python project.
+          Cryptographic API usage analysis available in QSE report.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="cpp_specific_directory">
+    <scenario>
+      User wants to scan a specific C++ project directory
+    </scenario>
+    <user_request>
+      "Scan /path/to/cpp-project for quantum vulnerabilities"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Verify specified path exists</action>
+        <tool>list_files</tool>
+        <path>/path/to/cpp-project</path>
+      </step>
+      <step number="2">
+        <action>Detect language in specified directory</action>
+        <result>Detects C++ project (finds .cpp, .h files, CMakeLists.txt)</result>
+      </step>
+      <step number="3">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /path/to/cpp-project -l .cpp
+        </command>
+      </step>
+      <step number="4">
+        <action>Confirm completion</action>
+        <result>
+          API Discovery scan completed for C++ project at specified path.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="dart_flutter_project">
+    <scenario>
+      User wants to scan a Flutter/Dart project
+    </scenario>
+    <user_request>
+      "Analyze my Flutter app for quantum safety"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language using list_files</action>
+        <tool>list_files</tool>
+        <result>Detects Dart project (finds .dart files, pubspec.yaml)</result>
+      </step>
+      <step number="2">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/flutter-app -l .dart
+        </command>
+      </step>
+      <step number="3">
+        <action>Confirm completion</action>
+        <result>
+          API Discovery scan completed for Dart/Flutter project.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="java_gradle_project">
+    <scenario>
+      User wants to scan a Gradle-based Java project with custom build directory
+    </scenario>
+    <user_request>
+      "Run cryptographic analysis on this Gradle project"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language using list_files</action>
+        <tool>list_files</tool>
+        <result>Detects Java project (finds .java files, build.gradle)</result>
+      </step>
+      <step number="2">
+        <action>Locate class files directory</action>
+        <tool>list_files</tool>
+        <result>Finds build/classes/java/main directory (Gradle project)</result>
+      </step>
+      <step number="3">
+        <action>Construct and execute Cryptographic Analytics command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/gradle-project -l .java -cf /Users/shetty/gradle-project/build/classes/java/main -da
+        </command>
+      </step>
+      <step number="4">
+        <action>Construct and execute API Discovery command</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/gradle-project -l .java
+        </command>
+      </step>
+      <step number="5">
+        <action>Confirm completion</action>
+        <result>
+          Complete quantum readiness assessment completed for Gradle project.
+        </result>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="ambiguous_language_detection">
+    <scenario>
+      Project contains multiple languages, detection is ambiguous
+    </scenario>
+    <user_request>
+      "Scan this project for quantum vulnerabilities"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Attempt language detection</action>
+        <tool>list_files</tool>
+        <result>Finds both Java and Python files in similar quantities</result>
+      </step>
+      <step number="2">
+        <action>Ask user to specify language</action>
+        <tool>ask_followup_question</tool>
+        <question>
+          This project contains multiple languages. Which language should I scan for quantum safety?
+        </question>
+        <suggestions>
+          <suggest>Java (.java) - Supports both Cryptographic Analytics and API Discovery</suggest>
+          <suggest>Python (.py) - API Discovery scan</suggest>
+        </suggestions>
+      </step>
+      <step number="3">
+        <action>User selects Java</action>
+        <result>Proceed with Java scan workflow</result>
+      </step>
+      <step number="4">
+        <action>Execute appropriate scans for Java</action>
+        <commands>
+          <command>Cryptographic Analytics with -da flag</command>
+          <command>API Discovery without -da flag</command>
+        </commands>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="no_class_files_found">
+    <scenario>
+      Java project but no compiled class files found
+    </scenario>
+    <user_request>
+      "Run quantum safe scan on this Java project"
+    </user_request>
+    <workflow>
+      <step number="1">
+        <action>Detect language</action>
+        <result>Java project detected</result>
+      </step>
+      <step number="2">
+        <action>Search for class files</action>
+        <tool>list_files</tool>
+        <result>No target/classes or build/classes directories found</result>
+      </step>
+      <step number="3">
+        <action>Use input path as fallback for class file path</action>
+        <note>QSE will handle missing class files appropriately</note>
+      </step>
+      <step number="4">
+        <action>Execute Cryptographic Analytics with fallback path</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/java-project -l .java -cf /Users/shetty/java-project -da
+        </command>
+      </step>
+      <step number="5">
+        <action>Execute API Discovery</action>
+        <tool>execute_command</tool>
+        <command>
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/java-project -l .java
+        </command>
+      </step>
+    </workflow>
+  </example>
+
+  <common_user_requests>
+    <request pattern="scan for quantum">
+      <interpretation>Run appropriate QSE scan(s) for detected language</interpretation>
+      <action>Detect language, construct command, execute scan</action>
+    </request>
+
+    <request pattern="quantum readiness|quantum safe|post-quantum">
+      <interpretation>Full quantum readiness assessment</interpretation>
+      <action>For Java: both scans; For others: API Discovery</action>
+    </request>
+
+    <request pattern="cryptographic analysis|crypto scan">
+      <interpretation>Cryptographic Analytics scan (Java only)</interpretation>
+      <action>If Java: run with -da flag; Otherwise: explain limitation</action>
+    </request>
+
+    <request pattern="API discovery|API scan">
+      <interpretation>API Discovery scan only</interpretation>
+      <action>Run without -da flag for any supported language</action>
+    </request>
+
+    <request pattern="scan [path]">
+      <interpretation>Scan specific directory path</interpretation>
+      <action>Use provided path as -i parameter</action>
+    </request>
+  </common_user_requests>
+
+  <response_templates>
+    <template name="scan_started">
+      <message>
+        Starting Quantum Safe Explorer scan for [LANGUAGE] project.
+        Scan type: [SCAN_TYPE]
+        Input path: [PATH]
+      </message>
+    </template>
+
+    <template name="java_both_scans">
+      <message>
+        Running complete quantum readiness assessment for Java project:
+        1. Cryptographic Analytics scan (analyzing bytecode)
+        2. API Discovery scan (analyzing source code)
+      </message>
+    </template>
+
+    <template name="scan_completed">
+      <message>
+        Quantum Safe Explorer scan completed successfully.
+        [SCAN_TYPE] analysis finished for [LANGUAGE] project.
+        Results are available in the QSE output directory.
+      </message>
+    </template>
+
+    <template name="language_not_supported">
+      <message>
+        The detected language [LANGUAGE] is not supported by Quantum Safe Explorer.
+        Supported languages: Java, Go, Dart, Python, C++
+      </message>
+    </template>
+  </response_templates>
+
+  <troubleshooting_examples>
+    <issue name="qse_not_found">
+      <symptom>Command fails with "No such file or directory"</symptom>
+      <diagnosis>QSE installation path incorrect or QSE not installed</diagnosis>
+      <solution>
+        Verify QSE is installed at /usr/local/bin/qse-cli-artifacts
+        Check if cli.sh script exists and is executable
+      </solution>
+    </issue>
+
+    <issue name="invalid_path">
+      <symptom>Command fails with "Invalid input path"</symptom>
+      <diagnosis>Specified directory does not exist</diagnosis>
+      <solution>
+        Verify the input path exists using list_files
+        Use absolute paths to avoid ambiguity
+      </solution>
+    </issue>
+
+    <issue name="no_source_files">
+      <symptom>Scan completes but finds no files</symptom>
+      <diagnosis>Wrong language specified or files in unexpected location</diagnosis>
+      <solution>
+        Re-run language detection
+        Verify file extensions match specified language
+        Check if source files are in subdirectories
+      </solution>
+    </issue>
+  </troubleshooting_examples>
+
+  <best_practices>
+    <practice>
+      Always detect language automatically before asking user
+    </practice>
+    <practice>
+      For Java projects, always run both scan types for complete assessment
+    </practice>
+    <practice>
+      Use absolute paths when possible to avoid ambiguity
+    </practice>
+    <practice>
+      Verify paths exist before constructing commands
+    </practice>
+    <practice>
+      Don't attempt to parse or summarize QSE output - let the tool generate its reports
+    </practice>
+    <practice>
+      If language detection is uncertain, ask user rather than guessing
+    </practice>
+    <practice>
+      For Java, search for class files in standard build directories
+    </practice>
+    <practice>
+      Execute commands one at a time and wait for completion
+    </practice>
+  </best_practices>
+</qse_usage_examples>
+
+<!-- Made with Bob -->

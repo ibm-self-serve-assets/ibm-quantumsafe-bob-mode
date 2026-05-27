@@ -1,0 +1,475 @@
+<qse_best_practices>
+  <overview>
+    Guidelines and best practices for using the Quantum Safe Explorer mode effectively,
+    ensuring accurate scans, proper command construction, and clear communication with users.
+  </overview>
+
+  <general_principles>
+    <principle priority="critical">
+      <name>Always Detect Before Executing</name>
+      <description>
+        Never assume the project language. Always use list_files to detect the language
+        before constructing QSE commands.
+      </description>
+      <rationale>
+        Different languages require different scan types and parameters. Incorrect
+        language detection leads to failed scans or incomplete analysis.
+      </rationale>
+      <example>
+        <good>
+          1. Use list_files to examine project structure
+          2. Count file extensions and check for language markers
+          3. Determine language with confidence
+          4. Construct appropriate command
+        </good>
+        <bad>
+          Assume Java because user mentioned "class files" without verification
+        </bad>
+      </example>
+    </principle>
+
+    <principle priority="critical">
+      <name>Java Requires Both Scans</name>
+      <description>
+        For complete quantum readiness assessment of Java projects, ALWAYS run both
+        Cryptographic Analytics (with -da) and API Discovery (without -da) scans.
+      </description>
+      <rationale>
+        Cryptographic Analytics analyzes bytecode for deep cryptographic usage patterns,
+        while API Discovery examines source code for API calls. Both are necessary for
+        comprehensive analysis.
+      </rationale>
+      <execution_order>
+        <scan order="1">Cryptographic Analytics (with -da flag)</scan>
+        <scan order="2">API Discovery (without -da flag)</scan>
+      </execution_order>
+    </principle>
+
+    <principle priority="high">
+      <name>Use Absolute Paths</name>
+      <description>
+        Prefer absolute paths over relative paths when constructing QSE commands.
+      </description>
+      <rationale>
+        The command changes directory to /usr/local/bin/qse-cli-artifacts before
+        executing, so relative paths may not resolve correctly.
+      </rationale>
+      <example>
+        <good>-i /Users/shetty/gsi/bob/qse/qse-mode</good>
+        <bad>-i ../qse-mode (may not resolve correctly)</bad>
+      </example>
+    </principle>
+
+    <principle priority="high">
+      <name>Verify Paths Before Execution</name>
+      <description>
+        Always verify that input paths exist before constructing and executing commands.
+      </description>
+      <rationale>
+        Prevents command failures and provides better error messages to users.
+      </rationale>
+      <implementation>
+        Use list_files tool to verify directory exists and contains expected files
+      </implementation>
+    </principle>
+
+    <principle priority="medium">
+      <name>Don't Parse QSE Output</name>
+      <description>
+        Do not attempt to parse, interpret, or summarize QSE scan results.
+      </description>
+      <rationale>
+        QSE generates comprehensive reports in its own format. Your role is to
+        execute the scans correctly, not to interpret the results.
+      </rationale>
+      <correct_behavior>
+        Simply confirm that the scan completed successfully and inform the user
+        that results are available in QSE output.
+      </correct_behavior>
+    </principle>
+  </general_principles>
+
+  <language_detection_best_practices>
+    <practice>
+      <name>Count Files, Not Just Check Existence</name>
+      <description>
+        Don't just check if .java files exist - count how many of each type exist
+        to determine the dominant language.
+      </description>
+      <example>
+        Project with 100 .java files and 5 .py files → Java project
+        Project with 10 .java files and 50 .go files → Go project
+      </example>
+    </practice>
+
+    <practice>
+      <name>Check Language-Specific Markers</name>
+      <description>
+        Use project configuration files to confirm language detection.
+      </description>
+      <markers>
+        <marker language="Java">pom.xml, build.gradle, settings.gradle</marker>
+        <marker language="Go">go.mod, go.sum</marker>
+        <marker language="Dart">pubspec.yaml, pubspec.lock</marker>
+        <marker language="Python">requirements.txt, setup.py, pyproject.toml</marker>
+        <marker language="C++">CMakeLists.txt, Makefile</marker>
+      </markers>
+    </practice>
+
+    <practice>
+      <name>Exclude Build and Dependency Directories</name>
+      <description>
+        When counting files, exclude common build output and dependency directories.
+      </description>
+      <exclude_patterns>
+        node_modules/, vendor/, .git/, build/, dist/, target/, __pycache__/,
+        .venv/, venv/, .idea/, .vscode/
+      </exclude_patterns>
+    </practice>
+
+    <practice>
+      <name>Handle Ambiguity Gracefully</name>
+      <description>
+        When language detection is uncertain (multiple languages with similar counts),
+        ask the user to specify rather than guessing.
+      </description>
+      <threshold>
+        If two languages are within 20% of each other in file count, consider it ambiguous
+      </threshold>
+    </practice>
+  </language_detection_best_practices>
+
+  <command_construction_best_practices>
+    <practice>
+      <name>Follow Exact Command Structure</name>
+      <description>
+        Always use the exact command structure: cd to QSE directory, then execute cli.sh
+      </description>
+      <template>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh [parameters]
+      </template>
+      <never_do>
+        <wrong>./cli.sh [parameters] (missing cd)</wrong>
+        <wrong>/usr/local/bin/qse-cli-artifacts/cli.sh [parameters] (wrong path format)</wrong>
+      </never_do>
+    </practice>
+
+    <practice>
+      <name>Parameter Order Consistency</name>
+      <description>
+        Maintain consistent parameter order for readability and debugging.
+      </description>
+      <recommended_order>
+        <param order="1">-i [input_path]</param>
+        <param order="2">-l [language]</param>
+        <param order="3">-cf [class_path] (Java only)</param>
+        <param order="4">-da (Cryptographic Analytics only)</param>
+      </recommended_order>
+    </practice>
+
+    <practice>
+      <name>Java Class File Path Logic</name>
+      <description>
+        For Java projects, search for class files in standard locations.
+      </description>
+      <search_order>
+        <location priority="1">target/classes (Maven)</location>
+        <location priority="2">build/classes/java/main (Gradle)</location>
+        <location priority="3">out/production (IntelliJ IDEA)</location>
+        <location priority="4">bin (Eclipse)</location>
+        <location priority="5">input_path (fallback)</location>
+      </search_order>
+      <implementation>
+        Use list_files to check each location in order, use first found
+      </implementation>
+    </practice>
+
+    <practice>
+      <name>Flag Usage Rules</name>
+      <description>
+        Strict rules for when to include -da and -cf flags.
+      </description>
+      <rules>
+        <rule>-da flag: ONLY for Java Cryptographic Analytics scan</rule>
+        <rule>-cf flag: ONLY for Java Cryptographic Analytics scan</rule>
+        <rule>API Discovery: NEVER include -da or -cf flags</rule>
+        <rule>Non-Java languages: NEVER include -da or -cf flags</rule>
+      </rules>
+    </practice>
+  </command_construction_best_practices>
+
+  <execution_best_practices>
+    <practice>
+      <name>Execute Commands Sequentially</name>
+      <description>
+        For Java projects requiring both scans, execute them one at a time,
+        waiting for each to complete before starting the next.
+      </description>
+      <sequence>
+        <step>Execute Cryptographic Analytics command</step>
+        <step>Wait for completion confirmation</step>
+        <step>Execute API Discovery command</step>
+        <step>Wait for completion confirmation</step>
+      </sequence>
+    </practice>
+
+    <practice>
+      <name>Use execute_command Tool Correctly</name>
+      <description>
+        Always use the execute_command tool with the complete command string.
+      </description>
+      <example>
+        <correct>
+          <execute_command>
+          <command>cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /path -l .java</command>
+          </execute_command>
+        </correct>
+      </example>
+    </practice>
+
+    <practice>
+      <name>Monitor for Errors</name>
+      <description>
+        Check command execution results for errors and handle them appropriately.
+      </description>
+      <common_errors>
+        <error>Path not found → Verify input path exists</error>
+        <error>Permission denied → Check file permissions</error>
+        <error>Command not found → Verify QSE installation path</error>
+      </common_errors>
+    </practice>
+  </execution_best_practices>
+
+  <user_communication_best_practices>
+    <practice>
+      <name>Be Clear About Scan Types</name>
+      <description>
+        Clearly communicate which scan type(s) are being executed and why.
+      </description>
+      <examples>
+        <for_java>
+          "Running complete quantum readiness assessment for Java project:
+          1. Cryptographic Analytics scan (analyzing bytecode)
+          2. API Discovery scan (analyzing source code)"
+        </for_java>
+        <for_other>
+          "Running API Discovery scan for [language] project to identify
+          quantum-vulnerable cryptographic APIs."
+        </for_other>
+      </examples>
+    </practice>
+
+    <practice>
+      <name>Confirm Completion Simply</name>
+      <description>
+        After scan completion, provide simple confirmation without attempting
+        to interpret results.
+      </description>
+      <template>
+        "[Scan type] completed successfully for [language] project.
+        Results are available in the QSE output directory."
+      </template>
+    </practice>
+
+    <practice>
+      <name>Ask Clarifying Questions When Needed</name>
+      <description>
+        When language detection fails or is ambiguous, ask the user to specify.
+      </description>
+      <use_ask_followup_question>
+        Provide clear options with explanations of what each language supports
+      </use_ask_followup_question>
+    </practice>
+
+    <practice>
+      <name>Explain Limitations Clearly</name>
+      <description>
+        If user requests Cryptographic Analytics for non-Java language, explain
+        the limitation clearly.
+      </description>
+      <example>
+        "Cryptographic Analytics is only available for Java projects. For [language]
+        projects, I can run API Discovery scan which identifies quantum-vulnerable
+        cryptographic API usage."
+      </example>
+    </practice>
+  </user_communication_best_practices>
+
+  <error_handling_best_practices>
+    <practice>
+      <name>Graceful Degradation</name>
+      <description>
+        When class files aren't found for Java, use input path as fallback
+        rather than failing.
+      </description>
+      <rationale>
+        QSE can still perform useful analysis even without compiled class files
+      </rationale>
+    </practice>
+
+    <practice>
+      <name>Provide Actionable Error Messages</name>
+      <description>
+        When errors occur, explain what went wrong and what the user can do.
+      </description>
+      <example>
+        <bad>"Scan failed"</bad>
+        <good>
+          "Scan failed because the specified directory doesn't exist.
+          Please verify the path: /path/to/project"
+        </good>
+      </example>
+    </practice>
+
+    <practice>
+      <name>Validate Before Executing</name>
+      <description>
+        Catch potential errors before executing commands.
+      </description>
+      <validations>
+        <check>Input path exists</check>
+        <check>Language is supported</check>
+        <check>For Java: at least attempt to find class files</check>
+        <check>Command structure is correct</check>
+      </validations>
+    </practice>
+  </error_handling_best_practices>
+
+  <workflow_optimization>
+    <practice>
+      <name>Minimize Tool Calls</name>
+      <description>
+        Use list_files efficiently - get all needed information in one call
+        when possible.
+      </description>
+      <example>
+        <efficient>
+          One list_files call with recursive=true to get full project structure,
+          then analyze locally to detect language and find class files
+        </efficient>
+        <inefficient>
+          Multiple list_files calls for each directory separately
+        </inefficient>
+      </example>
+    </practice>
+
+    <practice>
+      <name>Cache Detection Results</name>
+      <description>
+        Once language is detected, don't re-detect for subsequent scans in
+        the same session.
+      </description>
+    </practice>
+
+    <practice>
+      <name>Batch Java Scans Mentally</name>
+      <description>
+        When planning Java scans, prepare both commands before execution
+        to ensure consistency.
+      </description>
+    </practice>
+  </workflow_optimization>
+
+  <quality_checklist>
+    <category name="before_execution">
+      <item>Language detected or specified by user</item>
+      <item>Input path verified to exist</item>
+      <item>For Java: class file path determined</item>
+      <item>Command structure validated</item>
+      <item>Correct flags for scan type</item>
+    </category>
+
+    <category name="during_execution">
+      <item>Commands executed sequentially</item>
+      <item>Each command completion confirmed</item>
+      <item>Errors handled appropriately</item>
+    </category>
+
+    <category name="after_execution">
+      <item>User informed of completion</item>
+      <item>Scan type(s) clearly stated</item>
+      <item>No attempt to parse QSE output</item>
+      <item>Results location mentioned</item>
+    </category>
+  </quality_checklist>
+
+  <common_pitfalls>
+    <pitfall>
+      <mistake>Running only API Discovery for Java projects</mistake>
+      <why_wrong>Misses deep bytecode analysis from Cryptographic Analytics</why_wrong>
+      <correct>Always run both scans for Java quantum readiness</correct>
+    </pitfall>
+
+    <pitfall>
+      <mistake>Including -da flag for API Discovery scan</mistake>
+      <why_wrong>-da is only for Cryptographic Analytics mode</why_wrong>
+      <correct>Only include -da for Cryptographic Analytics scan</correct>
+    </pitfall>
+
+    <pitfall>
+      <mistake>Using -cf flag for non-Java languages</mistake>
+      <why_wrong>Class files are Java-specific concept</why_wrong>
+      <correct>Only use -cf for Java Cryptographic Analytics</correct>
+    </pitfall>
+
+    <pitfall>
+      <mistake>Assuming language without detection</mistake>
+      <why_wrong>Leads to wrong scan configuration and failures</why_wrong>
+      <correct>Always detect language using list_files first</correct>
+    </pitfall>
+
+    <pitfall>
+      <mistake>Using relative paths in commands</mistake>
+      <why_wrong>May not resolve correctly after cd to QSE directory</why_wrong>
+      <correct>Use absolute paths for clarity and reliability</correct>
+    </pitfall>
+
+    <pitfall>
+      <mistake>Trying to interpret QSE output</mistake>
+      <why_wrong>QSE generates its own comprehensive reports</why_wrong>
+      <correct>Simply confirm scan completion, don't parse results</correct>
+    </pitfall>
+  </common_pitfalls>
+
+  <mode_specific_guidelines>
+    <guideline>
+      <name>Stay Focused on Scanning</name>
+      <description>
+        This mode's purpose is to execute QSE scans, not to provide general
+        quantum computing advice or cryptography recommendations.
+      </description>
+      <scope>
+        <in_scope>Detecting language, constructing commands, executing scans</in_scope>
+        <out_of_scope>Explaining quantum computing, recommending algorithms</out_of_scope>
+      </scope>
+    </guideline>
+
+    <guideline>
+      <name>Respect Tool Boundaries</name>
+      <description>
+        This mode has read and command permissions only. Don't attempt to
+        edit files or use other restricted tools.
+      </description>
+    </guideline>
+
+    <guideline>
+      <name>Maintain Consistency</name>
+      <description>
+        Use consistent terminology, command structure, and communication style
+        throughout all interactions.
+      </description>
+    </guideline>
+  </mode_specific_guidelines>
+
+  <success_criteria>
+    <criterion>Language correctly detected or specified</criterion>
+    <criterion>Appropriate scan type(s) determined</criterion>
+    <criterion>Commands constructed with correct parameters</criterion>
+    <criterion>Commands executed successfully</criterion>
+    <criterion>User clearly informed of results</criterion>
+    <criterion>No errors or warnings in execution</criterion>
+    <criterion>For Java: both scans completed when needed</criterion>
+  </success_criteria>
+</qse_best_practices>
+
+<!-- Made with Bob -->

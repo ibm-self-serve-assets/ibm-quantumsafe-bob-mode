@@ -1,0 +1,380 @@
+<qse_workflow>
+  <overview>
+    This workflow guides you through running Quantum Safe Explorer (QSE) scans to analyze
+    codebases for quantum computing readiness and cryptographic vulnerabilities.
+  </overview>
+
+  <qse_installation_path>
+    <constant>/usr/local/bin/qse-cli-artifacts</constant>
+    <description>
+      The QSE CLI is installed at /usr/local/bin/qse-cli-artifacts and this path
+      is configured once during setup. Always use this path when constructing commands.
+    </description>
+  </qse_installation_path>
+
+  <scan_types>
+    <scan type="cryptographic_analytics">
+      <description>
+        Performs deep cryptographic analysis of Java code, examining class files
+        and bytecode for cryptographic API usage and vulnerabilities.
+      </description>
+      <language_support>Java only (.java)</language_support>
+      <required_flag>-da</required_flag>
+      <required_parameter>-cf (class_file_path)</required_parameter>
+      <when_to_use>
+        Always run for Java projects as part of quantum readiness assessment.
+        This scan provides detailed cryptographic analysis that complements API discovery.
+      </when_to_use>
+    </scan>
+
+    <scan type="api_discovery">
+      <description>
+        Discovers and analyzes cryptographic API usage across the codebase,
+        identifying quantum-vulnerable cryptographic implementations.
+      </description>
+      <language_support>
+        All supported languages: .java, .go, .dart, .py, .cpp
+      </language_support>
+      <required_flag>None (no -da flag)</required_flag>
+      <when_to_use>
+        Run for all projects regardless of language. For Java projects, run this
+        in addition to Cryptographic Analytics for complete quantum readiness assessment.
+      </when_to_use>
+    </scan>
+  </scan_types>
+
+  <workflow_steps>
+    <step number="1">
+      <title>Understand User Request</title>
+      <description>
+        Parse the user's request to determine what type of scan they need
+      </description>
+      <actions>
+        <action>Identify if user wants quantum readiness scan, crypto analysis, or both</action>
+        <action>Check if user specified a particular directory or wants to scan current workspace</action>
+        <action>Note any specific requirements or constraints mentioned</action>
+      </actions>
+    </step>
+
+    <step number="2">
+      <title>Detect Project Language</title>
+      <description>
+        Automatically detect the primary programming language of the project
+      </description>
+      <actions>
+        <action>Use list_files tool to examine project structure</action>
+        <action>Look for language-specific files and extensions</action>
+        <action>Identify the dominant language based on file counts and project structure</action>
+        <action>Refer to language_detection.xml for detailed detection rules</action>
+      </actions>
+      <important>
+        Language detection determines which scans to run:
+        - Java: Run BOTH Cryptographic Analytics AND API Discovery
+        - Other languages: Run API Discovery only
+      </important>
+    </step>
+
+    <step number="3">
+      <title>Determine Scan Parameters</title>
+      <description>
+        Gather all necessary parameters for constructing the QSE command
+      </description>
+      <parameters>
+        <parameter name="input_path">
+          <flag>-i</flag>
+          <description>The codebase directory to scan</description>
+          <default>Current working directory (pwd)</default>
+          <how_to_determine>
+            Use current workspace directory unless user specifies otherwise
+          </how_to_determine>
+        </parameter>
+
+        <parameter name="language">
+          <flag>-l</flag>
+          <description>File extension for the language</description>
+          <possible_values>.java, .go, .dart, .py, .cpp</possible_values>
+          <how_to_determine>
+            Based on language detection in step 2
+          </how_to_determine>
+        </parameter>
+
+        <parameter name="class_file_path">
+          <flag>-cf</flag>
+          <description>Path to compiled Java class files</description>
+          <required_for>Java Cryptographic Analytics scan only</required_for>
+          <default>Same as input_path (-i)</default>
+          <how_to_determine>
+            For Java projects, look for build output directories:
+            - target/classes (Maven)
+            - build/classes (Gradle)
+            - out/production (IntelliJ)
+            - bin (Eclipse)
+            If not found, default to same as input_path
+          </how_to_determine>
+        </parameter>
+
+        <parameter name="discovery_analytics_flag">
+          <flag>-da</flag>
+          <description>Enables Cryptographic Analytics mode</description>
+          <required_for>Cryptographic Analytics scan only</required_for>
+          <not_used_for>API Discovery scan</not_used_for>
+        </parameter>
+      </parameters>
+    </step>
+
+    <step number="4">
+      <title>Construct QSE Command</title>
+      <description>
+        Build the appropriate QSE CLI command based on scan type and parameters
+      </description>
+      <command_structure>
+        <base>cd /usr/local/bin/qse-cli-artifacts && ./cli.sh</base>
+        <required_params>-i [input_path] -l [language]</required_params>
+        <conditional_params>
+          <for_java_crypto_analytics>-cf [class_file_path] -da</for_java_crypto_analytics>
+          <for_api_discovery>No additional flags</for_api_discovery>
+        </conditional_params>
+      </command_structure>
+      <refer_to>command_construction.xml for detailed command building logic</refer_to>
+    </step>
+
+    <step number="5">
+      <title>Execute Scan</title>
+      <description>
+        Run the constructed QSE command using execute_command tool
+      </description>
+      <actions>
+        <action>Execute the command in the terminal</action>
+        <action>Monitor the scan progress</action>
+        <action>Wait for scan completion</action>
+      </actions>
+      <important>
+        For Java projects requiring quantum readiness assessment:
+        1. First run Cryptographic Analytics scan (with -da flag)
+        2. Then run API Discovery scan (without -da flag)
+        Both scans are necessary for complete analysis
+      </important>
+    </step>
+
+    <step number="6">
+      <title>Locate QSE Findings File</title>
+      <description>
+        Find the JSON findings file generated by QSE in the explorer results directory
+      </description>
+      <actions>
+        <action>Look for the findings JSON file in explorer results directory</action>
+        <action>The directory is created in the working directory where scan was run</action>
+        <action>The file is usually named with a timestamp or scan identifier</action>
+        <action>Use list_files tool to locate the most recent findings file</action>
+      </actions>
+      <important>
+        The findings file must exist before proceeding to QCM upload.
+        The explorer results directory is in the working directory, NOT in the
+        QSE installation directory. If not found, inform the user and do not proceed with upload.
+      </important>
+    </step>
+
+    <step number="7">
+      <title>Update Repository URL in Findings</title>
+      <description>
+        Update the repositoryUrl field in the findings JSON file with the GitHub repository URL
+      </description>
+      <actions>
+        <action>Check if GitHub repository URL is available from git remote</action>
+        <action>If not available, ask user for the GitHub repository URL</action>
+        <action>Use sed command to update repositoryUrl field in JSON without reading entire file</action>
+        <action>Validate JSON structure after update using jq or grep</action>
+      </actions>
+      <implementation>
+        <step>Get GitHub URL from git remote origin</step>
+        <command>git -C [workspace_dir] remote get-url origin</command>
+        <step>If command fails or returns non-GitHub URL, ask user</step>
+        <step>Use sed to update repositoryUrl field in findings JSON</step>
+        <command>
+          sed -i.bak 's|"repositoryUrl"[[:space:]]*:[[:space:]]*"[^"]*"|"repositoryUrl": "[github_url]"|g' [findings_file_path]
+        </command>
+        <step>Validate JSON structure and extract repositoryUrl value</step>
+        <command>
+          jq -r '.findings.repositoryUrl' [findings_file_path]
+        </command>
+        <note>jq validates the entire JSON structure and extracts the repositoryUrl value from .findings.repositoryUrl path</note>
+      </implementation>
+      <important>
+        This step must be completed before uploading to QCM to ensure the findings
+        include the correct repository URL for tracking and correlation.
+        If JSON validation fails, restore from backup and report error.
+      </important>
+    </step>
+
+    <step number="8">
+      <title>Retrieve QCM Import Profile ID</title>
+      <description>
+        Get the profile ID for the QSE findings profile in QCM
+      </description>
+      <actions>
+        <action>Use gcm_api tool with service "discovery" and operation "import_profiles.list"</action>
+        <action>Parse the response to find the QSE findings profile</action>
+        <action>Extract the profile_identifier (profile ID) from the response</action>
+        <action>Store the profile ID for use in the upload step</action>
+      </actions>
+      <api_call_example>
+        {
+          "service": "discovery",
+          "operation": "import_profiles.list"
+        }
+      </api_call_example>
+      <important>
+        The profile ID is required for uploading findings to QCM.
+        If no QSE profile exists, inform the user that a profile must be created first.
+      </important>
+    </step>
+
+    <step number="9">
+      <title>Upload Findings to QCM</title>
+      <description>
+        Upload the QSE findings JSON file to Quantum Cryptographic Manager
+      </description>
+      <actions>
+        <action>Use gcm_api tool with service "discovery" and operation "import.upload"</action>
+        <action>Provide the profile_identifier in path_params</action>
+        <action>Specify the absolute file_path to the findings JSON file</action>
+        <action>Wait for upload confirmation</action>
+      </actions>
+      <api_call_example>
+        {
+          "service": "discovery",
+          "operation": "import.upload",
+          "path_params": {
+            "profile_identifier": "profile_id_from_step_8"
+          },
+          "file_path": "/absolute/path/to/workspace/qse_explorer_result/findings.json"
+        }
+      </api_call_example>
+      <note>
+        IMPORTANT: You MUST provide the absolute path to the findings file.
+        Construct it by combining the current working directory with the relative
+        path to the file (e.g., if working directory is /Users/user/project and
+        file is in qse_explorer_result/findings.json, use /Users/user/project/qse_explorer_result/findings.json).
+      </note>
+      <important>
+        The file_path must point to a valid JSON file.
+        Ensure the file exists and is readable before attempting upload.
+      </important>
+    </step>
+
+    <step number="10">
+      <title>Confirm Upload and Present Results</title>
+      <description>
+        Verify the upload was successful and inform the user
+      </description>
+      <actions>
+        <action>Check the response from the upload operation</action>
+        <action>Confirm successful upload to QCM</action>
+        <action>Inform user that scan completed and findings uploaded to QCM</action>
+        <action>Provide summary of what was accomplished</action>
+      </actions>
+      <important>
+        Do NOT generate additional reports or summaries of the findings themselves.
+        The QSE tool and QCM produce comprehensive reports. Simply confirm completion.
+      </important>
+    </step>
+  </workflow_steps>
+
+  <decision_tree>
+    <decision>
+      <question>What language is the project?</question>
+      <if_java>
+        <action>Run Cryptographic Analytics scan (with -da flag)</action>
+        <action>Run API Discovery scan (without -da flag)</action>
+        <note>Both scans required for complete quantum readiness assessment</note>
+      </if_java>
+      <if_other_language>
+        <action>Run API Discovery scan only (without -da flag)</action>
+        <note>Cryptographic Analytics not available for non-Java languages</note>
+      </if_other_language>
+    </decision>
+    
+    <decision>
+      <question>Should findings be uploaded to QCM?</question>
+      <if_yes>
+        <action>Locate findings JSON file in explorer results directory</action>
+        <action>Retrieve QCM import profile ID using gcm_api</action>
+        <action>Upload findings file to QCM</action>
+        <action>Confirm successful upload</action>
+      </if_yes>
+      <if_no>
+        <action>Skip QCM upload steps</action>
+        <action>Inform user that findings are available locally</action>
+      </if_no>
+    </decision>
+  </decision_tree>
+
+  <error_handling>
+    <scenario name="language_detection_fails">
+      <action>Ask user to specify the language</action>
+      <provide_options>.java, .go, .dart, .py, .cpp</provide_options>
+    </scenario>
+
+    <scenario name="class_files_not_found">
+      <action>Use input_path as class_file_path default</action>
+      <note>QSE will handle missing class files appropriately</note>
+    </scenario>
+
+    <scenario name="scan_execution_fails">
+      <action>Report the error to user</action>
+      <action>Check if QSE installation path is correct</action>
+      <action>Verify input path exists and is accessible</action>
+    </scenario>
+
+    <scenario name="findings_file_not_found">
+      <action>Check explorer results directory for JSON files</action>
+      <action>If no files found, inform user that scan may have failed</action>
+      <action>Do not proceed with QCM upload</action>
+    </scenario>
+
+    <scenario name="github_url_not_found">
+      <action>Try to get GitHub URL from git remote origin</action>
+      <action>If git command fails or returns non-GitHub URL, ask user for GitHub repository URL</action>
+      <action>Validate that provided URL is a valid GitHub repository URL</action>
+      <action>Do not proceed with repositoryUrl update until valid URL is obtained</action>
+    </scenario>
+
+    <scenario name="repository_url_update_fails">
+      <action>Report the sed command error to user</action>
+      <action>Check if findings file is writable</action>
+      <action>Verify backup file was created (.bak extension)</action>
+      <action>If JSON validation fails after update, restore from backup</action>
+      <action>Inform user that manual update may be required</action>
+    </scenario>
+
+    <scenario name="qcm_profile_not_found">
+      <action>List available import profiles to user</action>
+      <action>Ask user to create QSE findings profile in QCM first</action>
+      <action>Do not proceed with upload until profile exists</action>
+    </scenario>
+
+    <scenario name="qcm_upload_fails">
+      <action>Report the error details to user</action>
+      <action>Verify file path is correct and file is readable</action>
+      <action>Verify profile ID is valid</action>
+      <action>Check QCM server connectivity</action>
+      <action>Findings remain available locally even if upload fails</action>
+    </scenario>
+  </error_handling>
+
+  <completion_criteria>
+    <criterion>Language successfully detected or specified</criterion>
+    <criterion>Appropriate scan type(s) determined</criterion>
+    <criterion>Command constructed with correct parameters</criterion>
+    <criterion>Scan executed successfully</criterion>
+    <criterion>Findings file located in explorer results directory</criterion>
+    <criterion>GitHub repository URL obtained and validated</criterion>
+    <criterion>Repository URL updated in findings JSON successfully</criterion>
+    <criterion>JSON structure validated after update without reading the file</criterion>
+    <criterion>QCM import profile ID retrieved successfully</criterion>
+    <criterion>Findings uploaded to QCM successfully</criterion>
+    <criterion>User informed of completion and upload status</criterion>
+  </completion_criteria>
+</qse_workflow>
+
+<!-- Made with Bob -->

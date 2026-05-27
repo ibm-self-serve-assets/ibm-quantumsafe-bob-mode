@@ -1,0 +1,270 @@
+<command_construction_guide>
+  <overview>
+    Detailed instructions for constructing Quantum Safe Explorer CLI commands
+    based on project context, language, and scan type requirements.
+  </overview>
+
+  <command_anatomy>
+    <base_structure>
+      <component order="1">
+        <name>Change Directory</name>
+        <value>cd /usr/local/bin/qse-cli-artifacts</value>
+        <purpose>Navigate to QSE installation directory</purpose>
+        <required>true</required>
+      </component>
+
+      <component order="2">
+        <name>Command Separator</name>
+        <value>&&</value>
+        <purpose>Chain commands to execute in sequence</purpose>
+        <required>true</required>
+      </component>
+
+      <component order="3">
+        <name>QSE Script</name>
+        <value>./cli.sh</value>
+        <purpose>Execute the QSE CLI script</purpose>
+        <required>true</required>
+      </component>
+
+      <component order="4">
+        <name>Parameters</name>
+        <value>-i [path] -l [ext] [-cf [path]] [-da]</value>
+        <purpose>Specify scan configuration</purpose>
+        <required>true (at minimum -i and -l)</required>
+      </component>
+    </base_structure>
+
+    <full_command_template>
+      cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i [input_path] -l [language] [-cf [class_path]] [-da]
+    </full_command_template>
+  </command_anatomy>
+
+  <parameter_details>
+    <parameter>
+      <flag>-i</flag>
+      <name>input_path</name>
+      <description>The directory containing the source code to scan</description>
+      <required>true</required>
+      <default_value>Current working directory (pwd)</default_value>
+      <construction_logic>
+        <step>Check if user specified a custom path</step>
+        <step>If not specified, use current workspace directory</step>
+        <step>Ensure path is absolute or properly relative</step>
+        <step>Verify path exists before constructing command</step>
+      </construction_logic>
+      <examples>
+        <example>-i /Users/shetty/gsi/quantum/qse/crypto-samples</example>
+        <example>-i .</example>
+        <example>-i /path/to/project</example>
+      </examples>
+    </parameter>
+
+    <parameter>
+      <flag>-l</flag>
+      <name>language</name>
+      <description>File extension indicating the programming language</description>
+      <required>true</required>
+      <possible_values>
+        <value>.java</value>
+        <value>.go</value>
+        <value>.dart</value>
+        <value>.py</value>
+        <value>.cpp</value>
+      </possible_values>
+      <construction_logic>
+        <step>Detect language using language_detection.xml rules</step>
+        <step>Map detected language to appropriate extension</step>
+        <step>If detection fails, ask user to specify</step>
+      </construction_logic>
+      <examples>
+        <example>-l .java</example>
+        <example>-l .go</example>
+        <example>-l .py</example>
+      </examples>
+    </parameter>
+
+    <parameter>
+      <flag>-cf</flag>
+      <name>class_file_path</name>
+      <description>Path to compiled Java class files (bytecode)</description>
+      <required>Only for Java Cryptographic Analytics scan</required>
+      <default_value>Same as input_path (-i)</default_value>
+      <construction_logic>
+        <step>Only include for Java projects with -da flag</step>
+        <step>Search for common Java build output directories</step>
+        <step>Check in order: target/classes, build/classes, out/production, bin</step>
+        <step>If found, use that path; otherwise use input_path</step>
+      </construction_logic>
+      <search_patterns>
+        <pattern priority="1">target/classes (Maven)</pattern>
+        <pattern priority="2">build/classes/java/main (Gradle)</pattern>
+        <pattern priority="3">out/production (IntelliJ IDEA)</pattern>
+        <pattern priority="4">bin (Eclipse)</pattern>
+      </search_patterns>
+      <examples>
+        <example>-cf /Users/shetty/gsi/quantum/qse/crypto-samples/target/classes</example>
+        <example>-cf /path/to/project/build/classes</example>
+        <example>-cf /path/to/project (fallback to input path)</example>
+      </examples>
+    </parameter>
+
+    <parameter>
+      <flag>-da</flag>
+      <name>discovery_analytics</name>
+      <description>Enables Cryptographic Analytics mode</description>
+      <required>Only for Cryptographic Analytics scan</required>
+      <construction_logic>
+        <step>Include ONLY for Cryptographic Analytics scan</step>
+        <step>NEVER include for API Discovery scan</step>
+        <step>Only applicable to Java language</step>
+      </construction_logic>
+      <when_to_include>
+        <condition>Language is Java (.java)</condition>
+        <condition>Scan type is Cryptographic Analytics</condition>
+      </when_to_include>
+      <when_to_exclude>
+        <condition>Scan type is API Discovery</condition>
+        <condition>Language is not Java</condition>
+      </when_to_exclude>
+    </parameter>
+  </parameter_details>
+
+  <command_construction_algorithms>
+    <algorithm name="java_cryptographic_analytics">
+      <description>Build command for Java Cryptographic Analytics scan</description>
+      <steps>
+        <step number="1">Start with base: cd /usr/local/bin/qse-cli-artifacts && ./cli.sh</step>
+        <step number="2">Add input path: -i [workspace_or_specified_path]</step>
+        <step number="3">Add language: -l .java</step>
+        <step number="4">Determine class file path:
+          - Search for target/classes, build/classes, out/production, bin
+          - If found, use that path
+          - Otherwise, use same as input path
+        </step>
+        <step number="5">Add class file path: -cf [determined_path]</step>
+        <step number="6">Add analytics flag: -da</step>
+      </steps>
+      <example_output>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/project -l .java -cf /Users/shetty/project/target/classes -da
+      </example_output>
+    </algorithm>
+
+    <algorithm name="java_api_discovery">
+      <description>Build command for Java API Discovery scan</description>
+      <steps>
+        <step number="1">Start with base: cd /usr/local/bin/qse-cli-artifacts && ./cli.sh</step>
+        <step number="2">Add input path: -i [workspace_or_specified_path]</step>
+        <step number="3">Add language: -l .java</step>
+        <step number="4">DO NOT add -cf flag</step>
+        <step number="5">DO NOT add -da flag</step>
+      </steps>
+      <example_output>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/project -l .java
+      </example_output>
+    </algorithm>
+
+    <algorithm name="non_java_api_discovery">
+      <description>Build command for non-Java API Discovery scan</description>
+      <steps>
+        <step number="1">Start with base: cd /usr/local/bin/qse-cli-artifacts && ./cli.sh</step>
+        <step number="2">Add input path: -i [workspace_or_specified_path]</step>
+        <step number="3">Add language: -l [detected_extension]</step>
+        <step number="4">DO NOT add -cf flag (not applicable)</step>
+        <step number="5">DO NOT add -da flag (not applicable)</step>
+      </steps>
+      <example_output>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i /Users/shetty/project -l .go
+      </example_output>
+    </algorithm>
+  </command_construction_algorithms>
+
+  <validation_checklist>
+    <check>Base path is /usr/local/bin/qse-cli-artifacts</check>
+    <check>Script name is ./cli.sh</check>
+    <check>-i parameter is present with valid path</check>
+    <check>-l parameter is present with valid extension</check>
+    <check>For Java Cryptographic Analytics: -cf and -da are present</check>
+    <check>For API Discovery: -da is NOT present</check>
+    <check>For non-Java: -cf is NOT present</check>
+    <check>Command uses && to chain cd and execution</check>
+  </validation_checklist>
+
+  <common_patterns>
+    <pattern name="current_directory_scan">
+      <description>Scan the current workspace directory</description>
+      <command_template>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i . -l [language]
+      </command_template>
+    </pattern>
+
+    <pattern name="specific_directory_scan">
+      <description>Scan a user-specified directory</description>
+      <command_template>
+        cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i [user_path] -l [language]
+      </command_template>
+    </pattern>
+
+    <pattern name="java_full_analysis">
+      <description>Complete quantum readiness for Java (both scans)</description>
+      <commands>
+        <command order="1" type="Cryptographic Analytics">
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i [path] -l .java -cf [class_path] -da
+        </command>
+        <command order="2" type="API Discovery">
+          cd /usr/local/bin/qse-cli-artifacts && ./cli.sh -i [path] -l .java
+        </command>
+      </commands>
+    </pattern>
+  </common_patterns>
+
+  <error_prevention>
+    <rule>Never include -da flag for API Discovery scans</rule>
+    <rule>Never include -cf flag for non-Java languages</rule>
+    <rule>Always verify input path exists before executing</rule>
+    <rule>Always use absolute path for QSE installation</rule>
+    <rule>Always include both -i and -l parameters</rule>
+    <rule>For Java Cryptographic Analytics, always include both -cf and -da</rule>
+  </error_prevention>
+
+  <path_resolution>
+    <guideline>
+      When determining the input path (-i):
+      1. If user specifies a path, use it exactly as provided
+      2. If no path specified, use current workspace directory
+      3. Convert relative paths to absolute when possible
+      4. Verify path exists using list_files before constructing command
+    </guideline>
+
+    <guideline>
+      When determining class file path (-cf) for Java:
+      1. Use list_files to check for build output directories
+      2. Search in order: target/classes, build/classes, out/production, bin
+      3. If multiple found, prefer Maven (target) over Gradle (build)
+      4. If none found, use input path as fallback
+      5. Always use absolute paths for clarity
+    </guideline>
+  </path_resolution>
+
+  <execution_notes>
+    <note>
+      The command changes directory to QSE installation before executing,
+      so the working directory during scan is /usr/local/bin/qse-cli-artifacts,
+      not the project directory. This is why absolute paths are preferred.
+    </note>
+
+    <note>
+      For Java projects requiring quantum readiness assessment, you must
+      execute TWO separate commands in sequence:
+      1. Cryptographic Analytics (with -da)
+      2. API Discovery (without -da)
+    </note>
+
+    <note>
+      The QSE tool generates its own reports and output files. Do not attempt
+      to parse or summarize the output - simply confirm execution completed.
+    </note>
+  </execution_notes>
+</command_construction_guide>
+
+<!-- Made with Bob -->

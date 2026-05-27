@@ -1,0 +1,393 @@
+<qcm_integration>
+  <overview>
+    This file provides detailed instructions for integrating QSE findings with
+    Quantum Cryptographic Manager (QCM) using the gcm_api MCP tool.
+  </overview>
+
+  <qcm_mcp_server>
+    <description>
+      The gcm-mcp-server provides tools to interact with IBM Guardium Cryptographic
+      Manager (GCM/QCM) APIs. It enables uploading QSE findings to QCM for
+      centralized cryptographic asset management and policy enforcement.
+    </description>
+    <authentication>
+      Authentication is handled automatically if GCM_USERNAME and GCM_PASSWORD
+      environment variables are set. Otherwise, authentication may be required
+      before API operations.
+    </authentication>
+  </qcm_mcp_server>
+
+  <workflow_integration>
+    <when_to_upload>
+      <trigger>After QSE scan completes successfully</trigger>
+      <trigger>When findings JSON file is generated</trigger>
+      <trigger>User requests QCM integration</trigger>
+    </when_to_upload>
+
+    <prerequisites>
+      <prerequisite>QSE scan must complete successfully</prerequisite>
+      <prerequisite>Findings JSON file must exist in explorer results directory</prerequisite>
+      <prerequisite>QCM server must be accessible</prerequisite>
+      <prerequisite>QSE import profile must exist in QCM</prerequisite>
+    </prerequisites>
+  </workflow_integration>
+
+  <api_operations>
+    <operation name="list_import_profiles">
+      <purpose>Retrieve list of import profiles to find QSE profile ID</purpose>
+      <service>discovery</service>
+      <operation_name>import_profiles.list</operation_name>
+      <parameters>None required</parameters>
+      <usage_example>
+        <use_mcp_tool>
+          <server_name>gcm-mcp-server</server_name>
+          <tool_name>gcm_api</tool_name>
+          <arguments>
+            {
+              "service": "discovery",
+              "operation": "import_profiles.list"
+            }
+          </arguments>
+        </use_mcp_tool>
+      </usage_example>
+      <response_handling>
+        <action>Parse the response to find profiles</action>
+        <action>Look for QSE-related profile (check name or description)</action>
+        <action>Extract the profile_identifier field</action>
+        <action>Store profile ID for use in upload operation</action>
+      </response_handling>
+      <error_scenarios>
+        <scenario>No profiles found - inform user to create QSE profile first</scenario>
+        <scenario>Multiple QSE profiles - ask user which one to use</scenario>
+        <scenario>API error - report error and check connectivity</scenario>
+      </error_scenarios>
+    </operation>
+
+    <operation name="upload_findings">
+      <purpose>Upload QSE findings JSON file to QCM</purpose>
+      <service>discovery</service>
+      <operation_name>import.upload</operation_name>
+      <required_parameters>
+        <parameter name="profile_identifier">
+          <description>The profile ID obtained from import_profiles.list</description>
+          <location>path_params</location>
+          <example>profile_id_123</example>
+        </parameter>
+        <parameter name="file_path">
+          <description>Absolute path to the findings JSON file</description>
+          <location>file_path</location>
+          <typical_location>/absolute/path/to/workspace/qse_explorer_result/findings.json</typical_location>
+          <note>MUST be an absolute path. Construct by combining working directory with qse_explorer_result/filename</note>
+        </parameter>
+      </required_parameters>
+      <usage_example>
+        <use_mcp_tool>
+          <server_name>gcm-mcp-server</server_name>
+          <tool_name>gcm_api</tool_name>
+          <arguments>
+            {
+              "service": "discovery",
+              "operation": "import.upload",
+              "path_params": {
+                "profile_identifier": "profile_id_from_list_operation"
+              },
+              "file_path": "/absolute/path/to/workspace/qse_explorer_result/findings.json"
+            }
+          </arguments>
+        </use_mcp_tool>
+      </usage_example>
+      <validation_before_upload>
+        <check>Verify file exists at specified path</check>
+        <check>Verify file is valid JSON format</check>
+        <check>Verify file is not empty</check>
+        <check>Verify profile_identifier is valid</check>
+      </validation_before_upload>
+      <response_handling>
+        <success>
+          <action>Confirm upload completed successfully</action>
+          <action>Inform user that findings are now in QCM</action>
+          <action>Provide any upload ID or reference from response</action>
+        </success>
+        <failure>
+          <action>Report specific error message</action>
+          <action>Check if file path is correct</action>
+          <action>Check if profile ID is valid</action>
+          <action>Verify QCM server connectivity</action>
+          <action>Inform user findings remain available locally</action>
+        </failure>
+      </response_handling>
+    </operation>
+  </api_operations>
+
+  <file_location_detection>
+    <description>
+      QSE generates findings files in the explorer results directory within
+      the current working directory where the scan was executed. The exact
+      filename may vary based on scan type and timestamp.
+    </description>
+    <typical_locations>
+      <location>./qse_explorer_result/ (relative to working directory)</location>
+      <location>[workspace_directory]/qse_explorer_result/</location>
+    </typical_locations>
+    <file_patterns>
+      <pattern>findings*.json</pattern>
+      <pattern>*_findings.json</pattern>
+      <pattern>qse_results*.json</pattern>
+      <pattern>*.json (any JSON file in explorer results directory)</pattern>
+    </file_patterns>
+    <detection_strategy>
+      <step>Use list_files tool on ./qse_explorer_result/ directory</step>
+      <step>Filter for JSON files</step>
+      <step>Sort by modification time (most recent first)</step>
+      <step>Select the most recent findings file</step>
+      <step>Verify file is not empty and contains valid JSON</step>
+      <step>Construct full path relative to working directory</step>
+    </detection_strategy>
+    <important>
+      The explorer results directory is created in the working directory where
+      the QSE scan command was executed, NOT in the QSE installation directory.
+      Always use paths relative to the current working directory.
+    </important>
+  </file_location_detection>
+
+  <best_practices>
+    <practice>
+      <title>Always verify file exists before upload</title>
+      <description>
+        Use list_files to confirm the findings file exists in explorer results directory
+        and get its exact absolute path before attempting upload to avoid errors.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Always use absolute paths for upload</title>
+      <description>
+        The gcm_api tool requires absolute paths for file uploads. Always construct
+        the full absolute path by combining the working directory with
+        qse_explorer_result/filename (e.g., /Users/user/project/qse_explorer_result/findings.json).
+      </description>
+    </practice>
+
+    <practice>
+      <title>Cache profile ID when possible</title>
+      <description>
+        If running multiple scans in sequence, store the profile ID from the first
+        lookup to avoid repeated API calls.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Provide clear error messages</title>
+      <description>
+        When upload fails, provide specific guidance on what went wrong and how
+        to fix it. Always mention that findings remain available locally.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Handle authentication gracefully</title>
+      <description>
+        If authentication fails, inform user about required environment variables
+        (GCM_USERNAME, GCM_PASSWORD) or authentication requirements.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Validate JSON before upload</title>
+      <description>
+        Optionally read and validate the JSON file structure before uploading
+        to catch issues early.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Update repository URL before upload</title>
+      <description>
+        Always update the repositoryUrl field in the findings JSON before uploading
+        to QCM. This ensures proper tracking and correlation of findings with the
+        source repository. Use sed command to update without reading the entire file,
+        and validate JSON structure after modification.
+      </description>
+    </practice>
+
+    <practice>
+      <title>Create backup before modifying JSON</title>
+      <description>
+        When updating the repositoryUrl field, use sed with -i.bak flag to create
+        a backup file. This allows recovery if the JSON structure is corrupted
+        during the update process.
+      </description>
+    </practice>
+  </best_practices>
+
+  <error_recovery>
+    <scenario name="profile_not_found">
+      <symptoms>import_profiles.list returns empty or no QSE profile</symptoms>
+      <resolution>
+        <step>Inform user that QSE import profile must be created in QCM</step>
+        <step>Provide guidance on creating import profile in QCM UI</step>
+        <step>Do not proceed with upload</step>
+        <step>Remind user that findings are available locally in ./qse_explorer_result/</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="file_not_found">
+      <symptoms>Findings file doesn't exist at expected location</symptoms>
+      <resolution>
+        <step>List contents of explorer results directory</step>
+        <step>Check if directory exists in working directory</step>
+        <step>Check if scan actually completed successfully</step>
+        <step>Look for alternative file names in the directory</step>
+        <step>If no file found, inform user scan may have failed</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="upload_fails">
+      <symptoms>API returns error during upload</symptoms>
+      <resolution>
+        <step>Report the specific error message from API</step>
+        <step>Verify file path is correct and accessible</step>
+        <step>Verify profile ID is valid</step>
+        <step>Check QCM server connectivity</step>
+        <step>Suggest retrying the upload</step>
+        <step>Remind user findings are still available locally</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="authentication_fails">
+      <symptoms>API returns authentication error</symptoms>
+      <resolution>
+        <step>Check if GCM_USERNAME and GCM_PASSWORD are set</step>
+        <step>Inform user about authentication requirements</step>
+        <step>Suggest setting environment variables</step>
+        <step>Do not proceed with upload until authenticated</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="explorer_results_not_found">
+      <symptoms>qse_explorer_result directory doesn't exist</symptoms>
+      <resolution>
+        <step>Verify QSE scan actually ran and completed</step>
+        <step>Check if scan was run from a different directory</step>
+        <step>List current working directory contents</step>
+        <step>Inform user that scan may not have completed successfully</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="github_url_not_available">
+      <symptoms>git remote command fails or returns non-GitHub URL</symptoms>
+      <resolution>
+        <step>Inform user that GitHub repository URL is needed</step>
+        <step>Ask user to provide the GitHub repository URL</step>
+        <step>Validate that provided URL is a valid GitHub repository URL (contains github.com)</step>
+        <step>Do not proceed with repositoryUrl update until valid URL is obtained</step>
+      </resolution>
+    </scenario>
+
+    <scenario name="repository_url_update_fails">
+      <symptoms>sed command fails or JSON validation fails after update</symptoms>
+      <resolution>
+        <step>Check if findings file is writable</step>
+        <step>Verify backup file (.bak) was created</step>
+        <step>If JSON is corrupted, restore from backup: mv [file].bak [file]</step>
+        <step>Report specific error to user</step>
+        <step>Suggest manual update of repositoryUrl field if automated update continues to fail</step>
+        <step>Do not proceed with QCM upload if repositoryUrl is not updated</step>
+      </resolution>
+    </scenario>
+  </error_recovery>
+
+  <complete_workflow_example>
+    <description>
+      Complete example of QCM integration workflow after QSE scan
+    </description>
+    <steps>
+      <step number="1">
+        <title>Locate findings file in working directory</title>
+        <tool>list_files</tool>
+        <path>./qse_explorer_result/</path>
+        <action>Identify most recent JSON file</action>
+        <note>Directory is relative to current working directory</note>
+      </step>
+
+      <step number="2">
+        <title>Update Repository URL in findings JSON</title>
+        <tool>execute_command</tool>
+        <actions>
+          <action>Get GitHub URL from git remote origin</action>
+          <command>git -C [workspace_dir] remote get-url origin</command>
+          <action>If git command fails or returns non-GitHub URL, ask user for URL</action>
+          <action>Update repositoryUrl field using sed command</action>
+          <command>sed -i.bak 's|"repositoryUrl"[[:space:]]*:[[:space:]]*"[^"]*"|"repositoryUrl": "[github_url]"|g' [findings_file_path]</command>
+          <action>Validate JSON structure and extract repositoryUrl value</action>
+          <command>jq -r '.findings.repositoryUrl' [findings_file_path]</command>
+        </actions>
+        <note>Creates backup file with .bak extension before modification</note>
+        <important>Must be completed before uploading to QCM</important>
+      </step>
+
+      <step number="3">
+        <title>Get QCM import profiles</title>
+        <tool>use_mcp_tool</tool>
+        <server>gcm-mcp-server</server>
+        <tool_name>gcm_api</tool_name>
+        <arguments>
+          {
+            "service": "discovery",
+            "operation": "import_profiles.list"
+          }
+        </arguments>
+        <action>Extract profile_identifier for QSE profile</action>
+      </step>
+
+      <step number="4">
+        <title>Upload findings to QCM</title>
+        <tool>use_mcp_tool</tool>
+        <server>gcm-mcp-server</server>
+        <tool_name>gcm_api</tool_name>
+        <arguments>
+          {
+            "service": "discovery",
+            "operation": "import.upload",
+            "path_params": {
+              "profile_identifier": "[profile_id_from_step_3]"
+            },
+            "file_path": "/absolute/path/to/workspace/qse_explorer_result/[filename_from_step_1]"
+          }
+        </arguments>
+        <action>Verify successful upload response</action>
+        <note>Use absolute path - findings file now contains updated repositoryUrl</note>
+      </step>
+
+      <step number="5">
+        <title>Confirm completion</title>
+        <action>Inform user scan completed</action>
+        <action>Confirm findings uploaded to QCM</action>
+        <action>Provide upload reference if available</action>
+        <action>Mention local file location for reference</action>
+      </step>
+    </steps>
+  </complete_workflow_example>
+
+  <user_communication>
+    <success_message>
+      QSE scan completed successfully. Findings have been uploaded to Quantum
+      Cryptographic Manager (QCM) and are now available for analysis and policy
+      enforcement. The findings file remains available locally at
+      [absolute_path_to_file].
+    </success_message>
+
+    <partial_success_message>
+      QSE scan completed successfully. However, upload to QCM failed: [error_details].
+      The findings file is available locally at [absolute_path_to_file]
+      and can be manually uploaded or the upload can be retried.
+    </partial_success_message>
+
+    <failure_message>
+      QSE scan completed but findings file could not be located. Please check
+      the explorer results directory in your working directory for scan results.
+    </failure_message>
+  </user_communication>
+</qcm_integration>
+
+<!-- Made with Bob -->
