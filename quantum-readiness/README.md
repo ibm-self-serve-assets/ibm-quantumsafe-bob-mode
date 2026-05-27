@@ -7,17 +7,17 @@ In this mode, Bob does the following activities to analyze the given code base f
   5. The developer can now remediate those code vulnerabilities using Bob's Code mode
 
 #### Prerequisites
-The following applications need to be installed and configured.
-1. Guardium Cryptography Manager (GCM): This is the application that provides the overall Quantum posture. This needs to be installed in a kubernetes environment. The system requirements for this product is available [here](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=system-requirements-prerequisites). For a development environment, a simple single node installation would suffice. Follow the instructions provided in this [documenatation](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=installing-guardium-cryptography-manager) to install and configure the appliance.  
-2. Quantum Safe Explorer (QSE): This is the source code scanning product used by Bob to fetch the crypto vulnerabilities. 
-3. Download the QSE VScode extension : M0V4VEN (part-code)
+The following applications need to be installed and configured. All these products can be downloaded from the IBM Partner portal.
+1. Guardium Cryptography Manager (GCM) Version 2.0.1.x : This is the application that provides the overall Quantum posture. This needs to be installed in a kubernetes environment. The system requirements for this product is available [here](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=system-requirements-prerequisites). For a development environment, a simple single node installation would suffice. Follow the instructions provided in this [documentation](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=installing-guardium-cryptography-manager) to install and configure the appliance.  
+2. Quantum Safe Explorer (QSE) 2.2.x or 2.3.x: This is the source code scanning product used by Bob to fetch the crypto vulnerabilities. This product is installed in the developer machine. The system requirements for this product is available [here](https://www.ibm.com/docs/en/quantum-safe/quantum-safe-explorer/2.x?topic=quantum-safe-explorer-overview) and installation documentation can be found [here](https://www.ibm.com/docs/en/quantum-safe/quantum-safe-explorer/2.x?topic=installing-uninstalling-quantum-safe-explorer). However, for this automated environment we need to have the command line version of this product as mentioned [here](https://www.ibm.com/docs/en/quantum-safe/quantum-safe-explorer/2.x?topic=quantum-safe-explorer-command-line-interface-cli)
+3. Install and configure the  QSE VScode extension in IBM Bob IDE. Instructions for the same is found [here](https://www.ibm.com/docs/en/quantum-safe/quantum-safe-explorer/2.x?topic=installing-uninstalling-quantum-safe-explorer-visual-studio-code-extension). 
 
-#### Installation
+#### Execution steps
 1. QSE CLI binary installation: 
 Place the binary in this path `/usr/local/bin/qse-cli-artifacts` and make sure `cli.sh` within the directory has execute permission.
 
 2. QSE VScode extension installation: 
-Import the extension to Vscode marketplace using the downloaded .vsix file.
+Import the VSCode extension using the downloaded .vsix file.
 
 3. Run modified GCM mcp server locally:
 check out the following [repo](https://github.ibm.com/ecosystem-engineering-lab/custom-gcm-mcp) to setup and configure mcp server locally.
