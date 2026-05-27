@@ -1,9 +1,16 @@
-### Bob Mode to Evaluate quantum Readiness of a project
+### Bob Mode to Evaluate Quantum Readiness of a project
+In this mode, Bob does the following activities to analyze the given code base for Quauntum crypto vulnerabilites.
+  1. Bob connects to the Quantum Safe Explorer (QSE) instance, executes the command and initiates the source code evalution
+  2. QSE identifies all the crypto vulnerable algorithms, libraries and APIs. It records them in a findings file.
+  3. Bob now initiates the upload of this file into Guardium Cryptography Manager (GCM) through the connected MCP server.
+  4. In GCM the entire crypto posture is made available on a dashboard with detailed inferences.
+  5. The developer can now remediate those code vulnerabilities using Bob's Code mode
 
-#### Binaries
-Get the QSE binary from [Software download](https://w3.ibm.com/w3publisher/software-downloads)
-1. Download the QSE cli binary: M0V4REN (part-code)
-2. Download the QSE VScode extension : M0V4VEN (part-code)
+#### Prerequisites
+The following applications need to be installed and configured.
+1. Guardium Cryptography Manager (GCM): This is the application that provides the overall Quantum posture. This needs to be installed in a kubernetes environment. The system requirements for this product is available [here](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=system-requirements-prerequisites). For a development environment, a simple single node installation would suffice. Follow the instructions provided in this [documenatation](https://www.ibm.com/docs/en/guardium-cm/2.0.0?topic=installing-guardium-cryptography-manager) to install and configure the appliance.  
+2. Quantum Safe Explorer (QSE): This is the source code scanning product used by Bob to fetch the crypto vulnerabilities. 
+3. Download the QSE VScode extension : M0V4VEN (part-code)
 
 #### Installation
 1. QSE CLI binary installation: 
