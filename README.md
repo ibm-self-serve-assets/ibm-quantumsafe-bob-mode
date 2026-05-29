@@ -23,7 +23,7 @@ Place the binary in this path `/usr/local/bin/qse-cli-artifacts` and make sure `
 Import the VSCode extension using the downloaded .vsix file.
 
 3. Run modified GCM mcp server locally:
-check out the following [repo](https://github.ibm.com/ecosystem-engineering-lab/custom-gcm-mcp) to setup and configure mcp server locally.
+check out the following [repo](quantum-readiness/custom-gcm-mcp-main) to setup and configure mcp server locally.
 
 4. Import the Bob mode to your project placed [here](./qse-export.yaml).
 
