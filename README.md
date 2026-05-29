@@ -30,7 +30,7 @@ Check out the following [repo](quantum-readiness/custom-gcm-mcp-main) to setup a
 5. Open your code base in the Bob
 
 ##### Run
-Select the mode from drop down and Use the following prompt to invoke the mode. Once this is done, Bob will execute the steps one by one and the results will be uploaded to GCM. Use this navigation to see the results. Expand the burget menu on top left and navigate to  "Inventory -> Code repositories".
+Select the mode from drop down and Use the following prompt to invoke the mode. Once this is done, Bob will execute the steps one by one and the results will be uploaded to GCM. Use this navigation to see the results. Expand the burger menu on top left and navigate to  "Inventory -> Code repositories".
 
 ```sh
 Analyse quantum safe readiness in the current project.
