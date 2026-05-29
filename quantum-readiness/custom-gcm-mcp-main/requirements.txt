@@ -1,0 +1,34 @@
+# Core MCP Server Dependencies
+mcp>=1.0.0
+
+# HTTP Client & Server
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Web Framework (for SSE transport and REST API)
+starlette>=0.27.0
+uvicorn>=0.23.0
+fastapi>=0.104.0
+pydantic>=2.0.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# HTML Parsing (for browser-based OIDC authentication)
+beautifulsoup4>=4.12.0
+
+# Standard Library (no installation needed, listed for reference)
+# - asyncio
+# - argparse
+# - base64
+# - datetime
+# - hashlib
+# - json
+# - logging
+# - os
+# - pathlib
+# - re
+# - secrets
+# - sys
+# - threading
+# - typing
